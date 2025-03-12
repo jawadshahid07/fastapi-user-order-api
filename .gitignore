@@ -1,0 +1,39 @@
+# Pyenv / Virtual Environment
+.python-version
+.venv
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+
+# Environment files
+.env
+
+# Dependency cache
+pip-cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw*
+
+# OS files
+._*
+*.DS_Store
+Thumbs.db
