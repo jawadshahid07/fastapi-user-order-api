@@ -5,6 +5,7 @@ from database import engine, Base
 
 app = FastAPI()
 
+# Create database tables (if not created)
 Base.metadata.create_all(bind=engine)
 
 # Register middleware
