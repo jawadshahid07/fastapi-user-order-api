@@ -37,3 +37,6 @@ pip-cache/
 ._*
 *.DS_Store
 Thumbs.db
+
+# Keys
+.ssh
