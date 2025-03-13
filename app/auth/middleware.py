@@ -1,9 +1,9 @@
 from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
-from database import get_db
-from auth import decode_access_token
-from models import User
+from app.db.database import get_db
+from app.auth.auth import decode_access_token
+from app.models.user import User
 
 class AuthMiddleware(BaseHTTPMiddleware):
     """Middleware to extract and verify JWT token from requests."""

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from middleware import AuthMiddleware
-from routes import auth, users
-from database import engine, Base
+from app.auth.middleware import AuthMiddleware
+from app.routes import auth, users
+from app.db.database import engine, Base
 
 app = FastAPI()
 

@@ -4,7 +4,7 @@ import jwt
 import os
 from dotenv import load_dotenv
 from fastapi import HTTPException
-from key_manager import PRIVATE_KEY, PUBLIC_KEY  # Import keys
+from app.auth.key_manager import PRIVATE_KEY, PUBLIC_KEY  # Import keys
 
 # Load environment variables
 load_dotenv()
