@@ -5,25 +5,9 @@ from app.db.database import get_db
 from app.models.user import User
 from app.auth.auth import hash_password
 from typing import List
+from app.schemas.user import UserResponse, UserRequest, UpdateUserRequest
 
 router = APIRouter(prefix="/users", tags=["Users"])
-
-# Define response model
-class UserResponse(BaseModel):
-    id: int
-    username: str
-    email: EmailStr
-    role: str
-
-class UserRequest(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    role: str
-
-class UpdateUserRequest(BaseModel):
-    username: str
-    email: EmailStr
 
 @router.get("/me", response_model=UserResponse)
 def get_profile(request: Request):
