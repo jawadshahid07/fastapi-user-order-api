@@ -3,27 +3,28 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.user import User
+from app.models.order import Order
 from app.auth.auth import hash_password
 from typing import List
+from app.schemas.user import UserResponse, UserRequest, UpdateUserRequest
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-# Define response model
-class UserResponse(BaseModel):
-    id: int
-    username: str
-    email: EmailStr
-    role: str
+@router.get("/{user_id}/orders")
+def list_user_orders(user_id: int, request: Request, db: Session = Depends(get_db)):
+    """List orders placed by a specific user (Admin only)."""
 
-class UserRequest(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    role: str
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
 
-class UpdateUserRequest(BaseModel):
-    username: str
-    email: EmailStr
+    user = request.state.user
+
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can list orders of other users")
+
+    orders = db.query(Order).all()#.filter(Order.user_id == int(user_id)).all()
+
+    return orders
 
 @router.get("/me", response_model=UserResponse)
 def get_profile(request: Request):
@@ -71,7 +72,7 @@ def update_profile(request: Request, update_data: UpdateUserRequest, db: Session
     user.email = update_data.email
 
     db.commit()
-    db.refresh(user)  # ✅ Now this works because user is part of the current session
+    db.refresh(user)
 
     return {"message": "Profile updated successfully", "id": user.id, "username": user.username, "email": user.email}
 

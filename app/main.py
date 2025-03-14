@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.auth.middleware import AuthMiddleware
-from app.routes import auth, users
+from app.routes import auth, users, orders
 from app.db.database import engine, Base
 
 app = FastAPI()
@@ -14,6 +14,7 @@ app.add_middleware(AuthMiddleware)
 # Register routes
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(orders.router)
 
 
 @app.get("/")
