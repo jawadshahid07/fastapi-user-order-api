@@ -71,3 +71,25 @@ def update_order(order_id: int, request: Request, order_data: UpdateOrderRequest
     db.refresh(order)
 
     return {"message": "Order updated successfully", "order_id": order.id, "status": order.status}
+
+@router.delete("/{order_id}")
+def delete_order(order_id: int, request: Request, db: Session = Depends(get_db)):
+    """Delete an order by ID (Admin, Customer for own orders)."""
+
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user = request.state.user
+
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # Customers can only delete their own orders
+    if user.role != "admin" and order.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only delete your own orders")
+
+    db.delete(order)
+    db.commit()
+
+    return {"message": "Order deleted successfully"}
