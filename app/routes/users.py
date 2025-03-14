@@ -14,7 +14,7 @@ class UserResponse(BaseModel):
 
 @router.get("/me", response_model=UserResponse)
 def get_profile(request: Request):
-    """Get current logged-in user profile."""
+    """Get current logged-in user profile. Only accessible by customers."""
 
     # Ensure request.state.user is set by middleware
     if not hasattr(request.state, "user") or not request.state.user:
@@ -22,8 +22,8 @@ def get_profile(request: Request):
 
     user = request.state.user
 
-    # Ensure the user object is valid
-    if not hasattr(user, "id") or not hasattr(user, "username") or not hasattr(user, "email"):
-        raise HTTPException(status_code=401, detail="User not found")
+    # Ensure the user is a customer
+    if user.role != "customer":
+        raise HTTPException(status_code=403, detail="Only customers can access this route")
 
     return user  # FastAPI automatically converts SQLAlchemy model to Pydantic
