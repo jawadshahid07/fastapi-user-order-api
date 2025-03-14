@@ -6,6 +6,22 @@ from app.schemas.order import OrderCreate, OrderResponse, UpdateOrderRequest
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
+@router.get("/me")
+def list_my_orders(request: Request, db: Session = Depends(get_db)):
+    """List orders placed by the currently logged-in customer."""
+
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user = request.state.user
+
+    if user.role != "customer":
+        raise HTTPException(status_code=403, detail="Only customers can view their own orders")
+
+    orders = db.query(Order).filter(Order.user_id == user.id).all()
+
+    return orders
+
 @router.post("/", response_model=dict)
 def create_order(request: Request, order_data: OrderCreate, db: Session = Depends(get_db)):
     """Create a new order for the logged-in customer."""
