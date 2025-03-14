@@ -93,3 +93,19 @@ def delete_order(order_id: int, request: Request, db: Session = Depends(get_db))
     db.commit()
 
     return {"message": "Order deleted successfully"}
+
+@router.get("/")
+def list_orders(request: Request, db: Session = Depends(get_db)):
+    """List all orders (Admin only)."""
+
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user = request.state.user
+
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can list all orders")
+
+    orders = db.query(Order).all()
+
+    return orders
