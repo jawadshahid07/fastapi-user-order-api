@@ -41,6 +41,40 @@ def get_profile(request: Request):
 
     return user  # FastAPI automatically converts SQLAlchemy model to Pydantic
 
+@router.put("/me")
+def update_profile(request: Request, update_data: UpdateUserRequest, db: Session = Depends(get_db)):
+    """Update the currently logged-in user's profile (Customer only)."""
+
+    # Ensure user is authenticated
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    logged_in_user = request.state.user
+
+    # Re-fetch the user inside this DB session
+    user = db.query(User).filter(User.id == logged_in_user.id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Only customers can update their profile
+    if user.role != "customer":
+        raise HTTPException(status_code=403, detail="Only customers can update their profile")
+
+    # Check if the new email already exists (excluding current user's email)
+    existing_user = db.query(User).filter(User.email == update_data.email, User.id != user.id).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already in use")
+
+    # Update user fields
+    user.username = update_data.username
+    user.email = update_data.email
+
+    db.commit()
+    db.refresh(user)  # ✅ Now this works because user is part of the current session
+
+    return {"message": "Profile updated successfully", "id": user.id, "username": user.username, "email": user.email}
+
 @router.post("/", status_code=201)
 def create_user(request: Request, user_data: UserRequest, db: Session = Depends(get_db)):
     """Create a new user. Only Admins can access this API."""
