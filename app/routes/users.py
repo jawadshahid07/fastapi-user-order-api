@@ -4,12 +4,24 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.user import User
 from app.auth.auth import hash_password
+from typing import List
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 # Define response model
 class UserResponse(BaseModel):
     id: int
+    username: str
+    email: EmailStr
+    role: str
+
+class UserRequest(BaseModel):
+    username: str
+    email: EmailStr
+    password: str
+    role: str
+
+class UpdateUserRequest(BaseModel):
     username: str
     email: EmailStr
 
@@ -29,15 +41,8 @@ def get_profile(request: Request):
 
     return user  # FastAPI automatically converts SQLAlchemy model to Pydantic
 
-
-class CreateUserRequest(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    role: str
-
 @router.post("/", status_code=201)
-def create_user(request: Request, user_data: CreateUserRequest, db: Session = Depends(get_db)):
+def create_user(request: Request, user_data: UserRequest, db: Session = Depends(get_db)):
     """Create a new user. Only Admins can access this API."""
     
     # Ensure request.state.user is set by middleware
@@ -69,3 +74,23 @@ def create_user(request: Request, user_data: CreateUserRequest, db: Session = De
     db.refresh(new_user)
 
     return {"message": "User created successfully", "id": new_user.id}
+
+@router.get("/{user_id}")
+def get_user(user_id: int, request: Request, db: Session = Depends(get_db)):
+    """Retrieve user details by ID. Admins can access any user, customers can only access their own profile."""
+    
+    # Ensure user is authenticated
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    logged_in_user = request.state.user
+
+    # If not admin, ensure they are only requesting their own details
+    if logged_in_user.role != "admin" and logged_in_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"id": user.id, "username": user.username, "email": user.email, "role": user.role}
