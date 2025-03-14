@@ -121,3 +121,32 @@ def update_user(user_id: int, request: Request, user_data: UpdateUserRequest, db
     db.refresh(user)
 
     return {"message": "User updated successfully", "id": user.id, "username": user.username, "email": user.email}
+
+@router.delete("/{user_id}")
+def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
+    """Delete a user by ID (Admin only)."""
+
+    # Ensure user is authenticated
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    logged_in_user = request.state.user
+
+    # Only admins can delete users
+    if logged_in_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can delete users")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    # Ensure user exists
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Optional: Prevent admin from deleting themselves
+    if logged_in_user.id == user.id:
+        raise HTTPException(status_code=403, detail="Admins cannot delete themselves")
+
+    db.delete(user)
+    db.commit()
+
+    return {"message": f"User {user.username} deleted successfully"}
