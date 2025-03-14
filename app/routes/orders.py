@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.order import Order
-from app.schemas.order import OrderCreate, OrderResponse
+from app.schemas.order import OrderCreate, OrderResponse, UpdateOrderRequest
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -48,3 +48,26 @@ def get_order(order_id: int, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Access denied")
 
     return order
+
+@router.put("/{order_id}")
+def update_order(order_id: int, request: Request, order_data: UpdateOrderRequest, db: Session = Depends(get_db)):
+    """Update order details by ID (Admin, Customer for own orders)."""
+
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    user = request.state.user
+
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # Customers can only update their own orders
+    if user.role != "admin" and order.user_id != user.id:
+        raise HTTPException(status_code=403, detail="You can only update your own orders")
+
+    order.status = order_data.status
+    db.commit()
+    db.refresh(order)
+
+    return {"message": "Order updated successfully", "order_id": order.id, "status": order.status}
