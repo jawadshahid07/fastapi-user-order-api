@@ -94,3 +94,30 @@ def get_user(user_id: int, request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
     return {"id": user.id, "username": user.username, "email": user.email, "role": user.role}
+
+@router.put("/{user_id}")
+def update_user(user_id: int, request: Request, user_data: UpdateUserRequest, db: Session = Depends(get_db)):
+    """Update user details by ID. Admins can update any user, customers can only update their own profile."""
+    
+    # Ensure user is authenticated
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    logged_in_user = request.state.user
+
+    # If not admin, ensure they are only updating their own details
+    if logged_in_user.role != "admin" and logged_in_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update fields
+    user.username = user_data.username
+    user.email = user_data.email
+
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "User updated successfully", "id": user.id, "username": user.username, "email": user.email}
