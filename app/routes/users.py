@@ -150,3 +150,21 @@ def delete_user(user_id: int, request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": f"User {user.username} deleted successfully"}
+
+@router.get("/", response_model=List[UserResponse])
+def list_users(request: Request, db: Session = Depends(get_db)):
+    """List all users (Admin only)."""
+
+    # Ensure user is authenticated
+    if not hasattr(request.state, "user") or not request.state.user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    logged_in_user = request.state.user
+
+    # Only admins can list users
+    if logged_in_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admins can list users")
+
+    users = db.query(User).all()
+    
+    return users
